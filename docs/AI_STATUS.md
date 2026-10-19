@@ -1,3 +1,14 @@
+### 2026-10-16 — Reusable local contact resolver
+- **Owner:** ChatGPT
+- **Status:** implementation committed on `feat/contact-resolver-interface`; pull-request CI not yet confirmed.
+- **Changed paths:** `host/missionlink_contact_resolver.py`, `host/tests/test_missionlink_contact_resolver.py`, `docs/CONTACT_RESOLVER.md`.
+- **Implemented:** read-only resolver facade over the contact book; exact Mesh Number lookup; case-insensitive exact label lookup; explicit matched/not-found/ambiguous results; deterministic substring search; validated file loading. Duplicate labels never silently select an arbitrary node.
+- **Validation:** added seven unit tests for exact number, label matching, missing results, duplicate-label ambiguity, stable search, invalid queries, and file loading. CI for this branch has not yet been observed. No physical hardware or RF behavior tested.
+- **Limits:** lookup only; no node discovery, trust verification, service authorization, or message delivery. RF remains disabled.
+- **Next:** open PR and verify the complete host suite plus ESP32-S3 build in GitHub Actions.
+
+---
+
 ### 2026-10-15 — Add hardware-independent mOS storage guards
 - **Owner:** ChatGPT
 - **Status:** implementation committed on `docs/mos-storage-layout`; CI pending.
