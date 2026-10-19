@@ -10,10 +10,12 @@ import hmac
 import json
 import secrets
 import threading
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from host.missionlink_services import RegistryError, ServiceRecord, ServiceRegistry
+from host.missionlink_store import RegistryStore, RegistryStoreError
 
 API_VERSION = 1
 MAX_BODY_BYTES = 16 * 1024
@@ -64,10 +66,12 @@ def _record_from_dict(value: Any) -> ServiceRecord:
     return record
 
 
-def make_handler(registry: ServiceRegistry, bearer_token: str):
+def make_handler(registry: ServiceRegistry, bearer_token: str, store: RegistryStore | None = None):
     """Create an isolated handler; callers must keep the token secret."""
     if not isinstance(bearer_token, str) or len(bearer_token) < 24:
         raise ValueError("bearer_token_must_be_at_least_24_characters")
+
+    mutation_lock = threading.RLock()
 
     class GatewayHandler(BaseHTTPRequestHandler):
         server_version = "MissionLinkGateway/1"
@@ -165,16 +169,30 @@ def make_handler(registry: ServiceRegistry, bearer_token: str):
                 return
             try:
                 record = _record_from_dict(self._read_json())
-                registry.register(record)
             except OverflowError:
                 self._send(413, {"ok": False, "error": "request_body_too_large"})
+                return
             except RegistryError as exc:
                 self._send(400, {"ok": False, "error": str(exc)})
+                return
             except (TypeError, ValueError):
                 self._send(400, {"ok": False, "error": "invalid_service_record"})
-            else:
-                self._send(201, {"ok": True, "api_version": API_VERSION,
-                                 "service": _record_dict(record)})
+                return
+            with mutation_lock:
+                previous = registry.get(record.service_id)
+                try:
+                    registry.register(record)
+                    if store is not None:
+                        store.save(registry)
+                except (RegistryError, RegistryStoreError, OSError):
+                    if previous is None:
+                        registry.unregister(record.service_id)
+                    else:
+                        registry.register(previous)
+                    self._send(500, {"ok": False, "error": "registry_persistence_failed"})
+                    return
+            self._send(201, {"ok": True, "api_version": API_VERSION,
+                             "service": _record_dict(record)})
 
         def do_DELETE(self) -> None:
             if not self._authorized():
@@ -185,10 +203,20 @@ def make_handler(registry: ServiceRegistry, bearer_token: str):
                 self._send(404, {"ok": False, "error": "not_found", "api_version": API_VERSION})
                 return
             service_id = path[len(prefix):]
-            if registry.unregister(service_id):
-                self._send(200, {"ok": True, "api_version": API_VERSION, "removed": service_id})
-            else:
-                self._send(404, {"ok": False, "error": "service_not_found", "api_version": API_VERSION})
+            with mutation_lock:
+                previous = registry.get(service_id)
+                if previous is None:
+                    self._send(404, {"ok": False, "error": "service_not_found", "api_version": API_VERSION})
+                    return
+                registry.unregister(service_id)
+                try:
+                    if store is not None:
+                        store.save(registry)
+                except (RegistryStoreError, OSError):
+                    registry.register(previous)
+                    self._send(500, {"ok": False, "error": "registry_persistence_failed"})
+                    return
+            self._send(200, {"ok": True, "api_version": API_VERSION, "removed": service_id})
 
     return GatewayHandler
 
@@ -199,7 +227,7 @@ class LoopbackGatewayServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, address: tuple[str, int], registry: ServiceRegistry, bearer_token: str):
+    def __init__(self, address: tuple[str, int], registry: ServiceRegistry, bearer_token: str, store: RegistryStore | None = None):
         import ipaddress
 
         host, _port = address
@@ -209,14 +237,19 @@ class LoopbackGatewayServer(ThreadingHTTPServer):
             loopback = host.lower().rstrip(".") == "localhost"
         if not loopback:
             raise ValueError("gateway_must_bind_to_loopback")
-        super().__init__(address, make_handler(registry, bearer_token))
+        super().__init__(address, make_handler(registry, bearer_token, store))
 
 
 def serve(registry: ServiceRegistry | None = None, host: str = "127.0.0.1",
-          port: int = 8765, bearer_token: str | None = None) -> None:
+          port: int = 8765, bearer_token: str | None = None,
+          store_path: str | Path = "~/.missionlink/services.json") -> None:
     """Run the local gateway. A random token is generated when none is supplied."""
     token = bearer_token or secrets.token_urlsafe(32)
-    server = LoopbackGatewayServer((host, port), registry or ServiceRegistry(), token)
+    store = RegistryStore(Path(store_path).expanduser())
+    loaded_registry = registry if registry is not None else store.load()
+    # Persist the initial validated snapshot so a newly created store exists.
+    store.save(loaded_registry)
+    server = LoopbackGatewayServer((host, port), loaded_registry, token, store)
     print(f"MissionLink local gateway: http://{host}:{server.server_port}")
     print(f"Bearer token (keep private): {token}")
     try:
@@ -233,5 +266,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the loopback-only MissionLink host registry API")
     parser.add_argument("--host", default="127.0.0.1", help="loopback address only")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--store", default="~/.missionlink/services.json", help="persistent registry JSON path")
     args = parser.parse_args()
-    serve(host=args.host, port=args.port)
+    serve(host=args.host, port=args.port, store_path=args.store)

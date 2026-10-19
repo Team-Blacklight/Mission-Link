@@ -19,7 +19,7 @@ MissionLink gateway node (e.g. XIAO ESP32-S3 + Wio-SX1262)
 
 A host joins by connecting to a MissionLink gateway that it can reach over a supported local transport. The gateway bridges service discovery and small control messages between the host API and mesh. The host and the gateway have separate identities: a mesh node ID identifies a radio endpoint; a host ID identifies a computer; a service ID identifies one capability on that computer.
 
-The platform-independent, transport-agnostic in-memory registry lives in `host/missionlink_services.py`. `host/missionlink_gateway.py` adds an initial **loopback-only** HTTP control API around that registry. This is still not a radio bridge, automatic discovery system, or production service; don't describe a registered record as a reachable service.
+The platform-independent registry lives in `host/missionlink_services.py`. `host/missionlink_store.py` provides bounded versioned JSON persistence with atomic replacement. `host/missionlink_gateway.py` adds a **loopback-only** HTTP control API. This is still not a radio bridge, automatic discovery system, or production service; don't describe a registered record as a reachable service.
 
 ## Service model
 
@@ -39,10 +39,10 @@ The registry bounds service count, ID lengths, capability count, endpoint length
 Run from the repository root with Python 3.10+:
 
 ```sh
-python -m host.missionlink_gateway --host 127.0.0.1 --port 8765
+python -m host.missionlink_gateway --host 127.0.0.1 --port 8765 --store ~/.missionlink/services.json
 ```
 
-The server refuses non-loopback bind addresses. It prints a newly generated bearer token once at startup; keep it private. Requests other than `GET /v1/health` require `Authorization: Bearer <token>`. The API supports listing services (`GET /v1/services`), optional capability/health filters, reading one record, registering a record (`POST /v1/services`), and unregistering one (`DELETE /v1/services/{service_id}`). Request JSON is bounded and unknown fields are rejected.
+The server refuses non-loopback bind addresses. It prints a newly generated bearer token once at startup; keep it private. Registry records are saved to the selected JSON path, loaded on startup, and updated through atomic file replacement. On POSIX systems the file is restricted to owner read/write permissions. Treat the registry as local metadata, not encrypted secret storage. Requests other than `GET /v1/health` require `Authorization: Bearer <token>`. The API supports listing services (`GET /v1/services`), optional capability/health filters, reading one record, registering a record (`POST /v1/services`), and unregistering one (`DELETE /v1/services/{service_id}`). Request JSON is bounded and unknown fields are rejected.
 
 Example (replace the token with the one printed by the server):
 
@@ -50,7 +50,7 @@ Example (replace the token with the one printed by the server):
 curl -H "Authorization: Bearer YOUR_TOKEN" http://127.0.0.1:8765/v1/services
 ```
 
-This initial adapter uses plain HTTP only on loopback and has no remote-LAN mode, persistent registry, per-service roles, TLS termination, or operation proxy. Do not forward its port, bind it to a LAN address, or treat its bearer token as production identity. Registered endpoints are metadata only: this API does not contact or execute them. The API does not enable RF or send mesh messages.
+This initial adapter uses plain HTTP only on loopback and has no remote-LAN mode, per-service roles, TLS termination, or operation proxy. Do not forward its port, bind it to a LAN address, or treat its bearer token as production identity. Registered endpoints are metadata only: this API does not contact or execute them. The API does not enable RF or send mesh messages.
 
 ## What belongs on LoRa vs. LAN
 
@@ -79,4 +79,4 @@ From the repository root, with Python 3.10+:
 python -m unittest discover -s host/tests -v
 ```
 
-The registry is a data/validation layer; the experimental gateway wraps it with a loopback-only HTTP API. A subsequent milestone should add stronger local authorization, persistence, and reviewed authenticated transport before any remote access, then implement service plugins for file storage and local AI.
+The registry is a data/validation layer with optional atomic local persistence; the experimental gateway wraps it with a loopback-only HTTP API. A subsequent milestone should add reviewed authenticated transport and stronger authorization before any remote access, then implement service plugins for file storage and local AI.

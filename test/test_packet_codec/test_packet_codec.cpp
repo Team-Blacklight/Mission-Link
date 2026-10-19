@@ -45,6 +45,10 @@ void test_mesh_broadcast_delivers_at_hop_limit(){ ml::MeshRouter r; auto p=makeP
 void test_mesh_rejects_zero_source_and_message_id(){ ml::MeshRouter r; auto p=makePacket(); memset(p.source,0,8); ml::Packet f;
  TEST_ASSERT_EQUAL((int)ml::MeshAction::DropInvalid,(int)r.process(p,B,10,f)); p=makePacket(); memset(p.messageId,0,8);
  TEST_ASSERT_EQUAL((int)ml::MeshAction::DropInvalid,(int)r.process(p,B,10,f)); }
+void test_mesh_rejects_group_without_group_id(){ ml::MeshRouter r; auto p=makePacket(ml::AddressMode::Group); memset(p.destination,0,8); ml::Packet f;
+ TEST_ASSERT_EQUAL((int)ml::MeshAction::DropInvalid,(int)r.process(p,B,10,f)); }
+void test_mesh_allows_broadcast_without_destination_id(){ ml::MeshRouter r; auto p=makePacket(ml::AddressMode::Broadcast); memset(p.destination,0,8); ml::Packet f;
+ TEST_ASSERT_EQUAL((int)ml::MeshAction::DeliverLocal,(int)r.process(p,B,10,f)); }
 void test_mesh_global_rate_limit(){ ml::MeshRouter r(ml::NodePreset::Repeater); ml::Packet f;
  for(uint8_t i=1;i<=ml::MeshRouter::MAX_FORWARDS_PER_WINDOW;++i){auto p=makePacket();p.messageId[7]=i;p.source[7]=i;
  TEST_ASSERT_EQUAL((int)ml::MeshAction::ForwardOnly,(int)r.process(p,B,100,f));}
@@ -74,7 +78,7 @@ void test_decode_rejects_trailing_bytes(){ml::Packet p;std::vector<uint8_t>b;TES
 void test_hex_id_null_is_safe(){TEST_ASSERT_EQUAL_STRING("",ml::hexId(nullptr,8).c_str());}
 int main(int argc,char**argv){UNITY_BEGIN();
  RUN_TEST(test_preset_names_and_parser); RUN_TEST(test_client_does_not_relay_unicast); RUN_TEST(test_mesh_direct_addressed_to_local_delivers); RUN_TEST(test_mesh_per_source_rate_limit); RUN_TEST(test_mesh_rejects_packet_from_local_source); RUN_TEST(test_repeater_forwards_group_without_local_delivery); RUN_TEST(test_gateway_delivers_and_forwards_group); RUN_TEST(test_mesh_three_node_forwarding_increments_once);RUN_TEST(test_mesh_duplicate_suppressed);RUN_TEST(test_mesh_hop_budget_stops_forwarding);
- RUN_TEST(test_mesh_broadcast_delivers_at_hop_limit);RUN_TEST(test_mesh_rejects_zero_source_and_message_id);RUN_TEST(test_mesh_global_rate_limit);RUN_TEST(test_mesh_duplicate_cache_expires);
+ RUN_TEST(test_mesh_broadcast_delivers_at_hop_limit);RUN_TEST(test_mesh_rejects_zero_source_and_message_id);RUN_TEST(test_mesh_rejects_group_without_group_id);RUN_TEST(test_mesh_allows_broadcast_without_destination_id);RUN_TEST(test_mesh_global_rate_limit);RUN_TEST(test_mesh_duplicate_cache_expires);
  RUN_TEST(test_round_trip);RUN_TEST(test_reject_truncated);RUN_TEST(test_reject_null_input);RUN_TEST(test_reject_invalid_hops);RUN_TEST(test_reject_invalid_type_on_encode);
  RUN_TEST(test_reject_invalid_mode_on_encode);RUN_TEST(test_reject_oversized_payload);RUN_TEST(test_encode_failure_clears_stale_output);RUN_TEST(test_max_payload_round_trip);
  RUN_TEST(test_decode_rejects_unknown_version);RUN_TEST(test_decode_rejects_invalid_type);RUN_TEST(test_decode_rejects_invalid_mode);RUN_TEST(test_decode_rejects_hop_limit_over_max);
