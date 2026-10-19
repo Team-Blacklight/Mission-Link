@@ -77,3 +77,38 @@ Boot and BLE events report firmware startup/advertising. Clients should tolerate
 - Do not send secrets over BLE until an authenticated pairing/provisioning flow is implemented.
 - The LoRa transmitter remains disabled. Never treat the current scaffold as a production secure messenger.
 - Future radio payloads must use authenticated encryption and replay protection; routing relays should not need message plaintext keys.
+
+
+## Python USB serial client
+
+The host-side diagnostic client is available in `host/missionlink_serial_client.py`.
+It supports only the currently implemented control commands (`help`, `status`,
+`nodes`, `presets`, and the three preset choices). It reads newline-delimited JSON,
+skips unrelated asynchronous events, validates response shape and size, and times out
+when no matching response arrives.
+
+Install PySerial only if opening a real port:
+
+```sh
+python -m pip install pyserial
+```
+
+Example:
+
+```python
+from host.missionlink_serial_client import open_serial
+
+client = open_serial("COM5")  # On Linux, typically /dev/ttyACM0 or /dev/ttyUSB0
+try:
+    print(client.status())
+    print(client.presets())
+finally:
+    client.close()
+```
+
+The port name is platform-specific. Close other serial monitors before connecting.
+The client intentionally rejects `send`, `group`, `join`, and `leave`: firmware
+reports those operations as not ready, and exposing them as a working messaging API
+would be misleading. Node discovery is also still unimplemented. This client is a
+local diagnostic/control adapter only; it does not enable RF or prove physical
+device connectivity.
