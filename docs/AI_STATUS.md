@@ -247,3 +247,14 @@ Add newest entries at the top. Link to the commit, PR, or issue whenever possibl
 - **Risks / compatibility:**
 - **Next action:**
 ```
+
+
+### 2026-10-14 — Ubuntu/Linux USB serial client
+- **Owner:** ChatGPT, requested by maintainer.
+- **Status:** implementation committed to branch `feat/ubuntu-linux-serial-client`; pull request to follow. Automated tests have been authored but have not yet been run in this tool session.
+- **Commits:** [CLI client](https://github.com/Innygr/Mission-Link/commit/f6e0d4849eebea0fcb12b44ab4b7b44bee0e51b6), [CLI protocol tests](https://github.com/Innygr/Mission-Link/commit/c19b17af1c66b46451622b8a9128dea5e46bde98), [Ubuntu guide](https://github.com/Innygr/Mission-Link/commit/255d2d883c1929b83d30673f5bd39d3393f2a50e).
+- **Changed paths:** `host/missionlink_linux.py`, `host/tests/test_missionlink_linux.py`, `docs/UBUNTU_LINUX_CLIENT.md`.
+- **Implemented:** Python CLI over the existing newline-delimited USB serial/JSON interface for status, preset listing/selection, and monitoring emitted JSON lines. Adds bounded response parsing, a command allowlist, pySerial optional dependency handling, fake-serial unit tests, and Ubuntu setup instructions.
+- **Limitations:** this is not yet a live LoRa chat client, LAN gateway API, or background daemon. Firmware still rejects messaging as not ready; the monitor only sees events actually emitted by firmware. Preset selection is RAM-only. No hardware or over-the-air test was performed.
+- **Safety:** no RF settings changed; no transmit command is exposed by this CLI.
+- **Next:** run Python unit tests and CI, then design a versioned authenticated gateway API and real host-to-node message events once the firmware's secured message path is ready.
