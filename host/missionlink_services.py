@@ -29,7 +29,16 @@ class RegistryError(ValueError):
 
 
 def _is_valid_endpoint(endpoint: str) -> bool:
-    """Accept loopback HTTP or HTTPS URLs; reject ambiguous URL forms."""
+    """Accept loopback HTTP or HTTPS base URLs without ambiguous URL syntax.
+
+    This validates metadata only; it does not make the endpoint trusted or
+    authorize a caller to connect to it. Any future connector must separately
+    implement authentication, authorization, and network-access policy.
+    """
+    # urlsplit tolerates or normalizes some control characters. Reject them
+    # before parsing, and reject backslashes to avoid parser disagreement.
+    if not endpoint or any(ord(ch) <= 0x20 or ord(ch) == 0x7F for ch in endpoint) or "\\" in endpoint:
+        return False
     try:
         parsed = urlsplit(endpoint)
         # Accessing .port validates the port syntax/range.
@@ -37,14 +46,17 @@ def _is_valid_endpoint(endpoint: str) -> bool:
     except (ValueError, UnicodeError):
         return False
 
-    if parsed.scheme == "https":
-        return bool(parsed.hostname) and parsed.username is None and parsed.password is None
+    # Service endpoints are base URLs, not URLs carrying fragments or
+    # per-request query parameters (which can accidentally contain secrets).
+    if parsed.fragment or parsed.query:
+        return False
+    if not parsed.hostname or parsed.username is not None or parsed.password is not None:
+        return False
 
-    if parsed.scheme != "http" or parsed.username is not None or parsed.password is not None:
-        return False
-    if parsed.port is None or not parsed.hostname:
-        return False
-    if parsed.path and parsed.path != "/" and not parsed.path.startswith("/"):
+    if parsed.scheme == "https":
+        return True
+
+    if parsed.scheme != "http" or parsed.port is None:
         return False
     hostname = parsed.hostname.rstrip(".").lower()
     if hostname == "localhost":

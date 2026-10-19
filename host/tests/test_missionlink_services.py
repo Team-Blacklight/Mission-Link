@@ -51,6 +51,11 @@ class ServiceRegistryTests(unittest.TestCase):
             "http://localhost:notaport",
             "https:///missing-host",
             "ftp://example.com/file",
+            "https://nas.example.invalid/path?token=secret",
+            "https://nas.example.invalid/path#fragment",
+            "https://nas.example.invalid\\\\path",
+            "https://nas.example.invalid/path with-space",
+            "https://nas.example.invalid/path\\nheader: value",
         ):
             with self.subTest(endpoint=endpoint), self.assertRaises(RegistryError):
                 service(endpoint=endpoint).validate()
