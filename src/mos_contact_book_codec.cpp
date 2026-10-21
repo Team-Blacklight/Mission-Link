@@ -13,9 +13,8 @@ uint32_t crc32(const uint8_t* data, size_t length) {
   uint32_t crc = 0xffffffffu;
   for (size_t i = 0; i < length; ++i) {
     crc ^= data[i];
-    for (uint8_t bit = 0; bit < 8; ++bit) {
+    for (uint8_t bit = 0; bit < 8; ++bit)
       crc = (crc >> 1) ^ ((crc & 1u) ? 0xedb88320u : 0u);
-    }
   }
   return crc ^ 0xffffffffu;
 }
@@ -42,17 +41,35 @@ bool validId(const uint8_t* id) {
 bool encodeContactBook(const ContactBook& book, uint8_t* output,
                        size_t outputCapacity, size_t* written) {
   if (written) *written = 0;
-  if (!output || !written || outputCapacity < HEADER_BYTES + CRC_BYTES ||
-      book.count() > CONTACT_BOOK_CAPACITY) return false;
-
+  if (!output || !written || book.count() > CONTACT_BOOK_CAPACITY) return false;
   size_t needed = HEADER_BYTES + CRC_BYTES;
   for (size_t i = 0; i < CONTACT_BOOK_CAPACITY; ++i) {
-    // ContactBook's public API is intentionally the only way to inspect entries;
-    // walk the bounded ID space is impossible, so serialization uses a friend-free
-    // accessor added to the model in the next change.
+    const Contact* contact = book.at(i);
+    if (!contact) continue;
+    const size_t labelLength = std::strlen(contact->label);
+    if (!validId(contact->nodeId) || !isValidContactLabel(contact->label) ||
+        labelLength > CONTACT_LABEL_MAX_BYTES) return false;
+    needed += CONTACT_NODE_ID_BYTES + 1 + labelLength;
   }
-  (void)needed;
-  return false;
+  if (needed > outputCapacity || needed > CONTACT_BOOK_ENCODED_MAX_BYTES) return false;
+
+  std::memcpy(output, MAGIC, sizeof(MAGIC));
+  output[4] = VERSION;
+  output[5] = static_cast<uint8_t>(book.count());
+  size_t offset = HEADER_BYTES;
+  for (size_t i = 0; i < CONTACT_BOOK_CAPACITY; ++i) {
+    const Contact* contact = book.at(i);
+    if (!contact) continue;
+    const size_t labelLength = std::strlen(contact->label);
+    std::memcpy(output + offset, contact->nodeId, CONTACT_NODE_ID_BYTES);
+    offset += CONTACT_NODE_ID_BYTES;
+    output[offset++] = static_cast<uint8_t>(labelLength);
+    std::memcpy(output + offset, contact->label, labelLength);
+    offset += labelLength;
+  }
+  put32(output + offset, crc32(output, offset));
+  *written = offset + CRC_BYTES;
+  return true;
 }
 
 bool decodeContactBook(ContactBook& destination, const uint8_t* input,
