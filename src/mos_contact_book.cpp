@@ -26,6 +26,11 @@ size_t ContactBook::count() const {
   return count_;
 }
 
+const Contact* ContactBook::at(size_t slot) const {
+  if (slot >= CONTACT_BOOK_CAPACITY || !contacts_[slot].occupied) return nullptr;
+  return &contacts_[slot];
+}
+
 const Contact* ContactBook::find(const uint8_t* nodeId) const {
   if (isZeroId(nodeId)) return nullptr;
   for (size_t i = 0; i < CONTACT_BOOK_CAPACITY; ++i) {
