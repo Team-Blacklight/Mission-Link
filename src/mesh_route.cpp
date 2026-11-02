@@ -195,6 +195,7 @@ bool RouteTable::calculate(const uint8_t senderId[8], const uint8_t receiverId[8
     memcpy(candidate.nodes[i], reverse[pathCount - i - 1], 8);
   for (size_t i = 0; i < current.visitedCount; ++i)
     if (!candidate.markVisited(current.visited[i])) return false;
+  if (!candidate.hasVisited(senderId) && !candidate.markVisited(senderId)) return false;
   result = candidate;
   return result.isValid();
 }
@@ -290,10 +291,14 @@ const LinkRetryPolicy::Entry* LinkRetryPolicy::find(const uint8_t from[8], const
   return nullptr;
 }
 
-bool LinkRetryPolicy::shouldRetry(const uint8_t from[8], const uint8_t to[8]) {
+bool LinkRetryPolicy::recordFailure(const uint8_t from[8], const uint8_t to[8], uint32_t now) {
   Entry* entry = findOrCreate(from, to);
   if (!entry || entry->unavailableUntil != 0) return false;
-  if (entry->failures < ROUTE_MAX_RETRIES) { ++entry->failures; return true; }
+  if (entry->failures < ROUTE_MAX_RETRIES) {
+    ++entry->failures;
+    return true;
+  }
+  entry->unavailableUntil = now + ROUTE_UNAVAILABLE_TTL_MS;
   return false;
 }
 
