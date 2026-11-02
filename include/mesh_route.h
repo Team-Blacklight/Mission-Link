@@ -84,7 +84,7 @@ class NodeHealthMonitor {
 class LinkRetryPolicy {
  public:
   LinkRetryPolicy();
-  bool shouldRetry(const uint8_t from[8], const uint8_t to[8]);
+  bool recordFailure(const uint8_t from[8], const uint8_t to[8], uint32_t nowMs);
   void markSuccess(const uint8_t from[8], const uint8_t to[8]);
   void expire(uint32_t nowMs);
   bool isTemporarilyUnavailable(const uint8_t from[8], const uint8_t to[8],
