@@ -8,7 +8,7 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
   // Firmware binaries must always come from the current deployment, never a stale
   // service-worker cache. flasher.js also requests them with cache: "no-store".
-  if (url.pathname.includes("/firmware/")) return;
+  if (url.pathname.includes("/firmware/") || url.pathname.includes("/api/")) return;
   event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
     if (response.ok) { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, copy)); }
     return response;
