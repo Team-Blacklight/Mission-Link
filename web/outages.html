@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101820"><meta name="description" content="MissionLink network availability and outage tracker">
+<link rel="icon" href="./assets/MissionLinkLogo.png" type="image/png"><link rel="apple-touch-icon" href="./assets/MissionLinkLogo.png">
+<link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./outages.css"><title>Network status · MissionLink</title>
+</head><body>
+<header class="topbar"><a class="brand" href="./" aria-label="MissionLink home"><img class="brand-logo" src="./assets/MissionLinkLogo.png" alt=""><span>MissionLink<small>LOCAL RADIO NETWORK</small></span></a>
+<nav class="top-nav"><a href="./outages.html" aria-current="page">Network status</a><a href="./testbench.html">Test bench ↗</a><a href="./flasher.html">Firmware flasher ↗</a></nav>
+<div class="header-status"><span class="status-dot dim" id="feed-dot"></span><span id="feed-label">Status feed unavailable</span></div></header>
+<main class="shell outage-shell">
+<section class="outage-hero"><div><p class="eyebrow">MISSIONLINK / PUBLIC STATUS</p><h1>Network <em>status.</em></h1><p class="lede">A transparent view of node availability, connection health, and reported service interruptions.</p></div><div class="status-orbit" aria-hidden="true"><span></span><i></i><b></b></div></section>
+<section class="network-banner" id="network-banner" data-state="unknown" aria-live="polite"><span class="banner-indicator"></span><div><strong id="network-state-title">Awaiting network data</strong><p id="network-state-description">No authenticated status feed is connected. This page will not guess at network availability.</p></div><span class="banner-updated" id="last-updated">NOT UPDATED</span></section>
+<section class="status-metrics" aria-label="Network summary">
+<article class="status-metric"><span class="metric-label">Online nodes</span><strong id="online-count">—</strong><small>Reporting healthy</small></article>
+<article class="status-metric"><span class="metric-label">Unstable nodes</span><strong id="unstable-count">—</strong><small>Degraded connectivity</small></article>
+<article class="status-metric"><span class="metric-label">Active outages</span><strong id="outage-count">—</strong><small>Confirmed incidents</small></article>
+<article class="status-metric"><span class="metric-label">Maintenance</span><strong id="maintenance-count">—</strong><small>Planned downtime</small></article></section>
+<section class="outage-columns">
+<article class="panel outage-panel"><div class="panel-heading"><div><p class="eyebrow">01 / INCIDENTS</p><h2>Outage history</h2></div><span class="icon-chip">!</span></div><div id="incident-list" class="incident-list"><div class="empty-state"><span class="empty-symbol">⌁</span><strong>No incident feed yet</strong><p>Outages will appear here after authenticated health reports are connected to the status service.</p></div></div></article>
+<article class="panel outage-panel"><div class="panel-heading"><div><p class="eyebrow">02 / INFRASTRUCTURE</p><h2>Node health</h2></div><span class="icon-chip">⌘</span></div><div id="node-list" class="node-list"><div class="empty-state"><span class="empty-symbol">◎</span><strong>Waiting for node reports</strong><p>Node status will populate from the network health service. No placeholder nodes are shown.</p></div></div></article>
+</section>
+<section class="status-footnote"><span class="status-dot dim"></span><p><strong>How outage detection works</strong><br>Nodes report connection failures independently. A suspected outage requires reports from multiple distinct nodes; maintenance windows are displayed separately. Public status is informational and does not expose private message content or contact details.</p></section>
+<footer><span>MISSIONLINK · NETWORK STATUS</span><span>STATUS IS UNKNOWN UNTIL A VERIFIED FEED IS AVAILABLE</span></footer></main>
+<script src="./outages.js" defer></script></body></html>
