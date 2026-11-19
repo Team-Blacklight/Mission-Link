@@ -72,17 +72,40 @@ bool RoutePath::nextHop(const uint8_t current[8], uint8_t out[8]) const {
 bool RoutePath::replaceRemaining(const uint8_t current[8],
                                  const uint8_t (*newNodes)[8], size_t count) {
   if (!current || !newNodes || count < 2 || count > ROUTE_MAX_NODES ||
-      !isValid() || !hasVisited(current) || !sameId(newNodes[0], current)) return false;
-  if (!sameId(newNodes[count - 1], receiver)) return false;
-  for (size_t i = 0; i < count; ++i) {
-    if (zeroId(newNodes[i])) return false;
-    for (size_t j = i + 1; j < count; ++j)
-      if (sameId(newNodes[i], newNodes[j])) return false;
-    if (i > 0 && hasVisited(newNodes[i])) return false;
+      !isValid() || !hasVisited(current) || !sameId(newNodes[0], current) ||
+      !sameId(newNodes[count - 1], receiver)) return false;
+
+  size_t currentIndex = nodeCount;
+  for (size_t i = 0; i < nodeCount; ++i) {
+    if (sameId(nodes[i], current)) {
+      currentIndex = i;
+      break;
+    }
   }
+  if (currentIndex == nodeCount) return false;
+
+  // Keep the already-traversed prefix, then append the replacement route
+  // beginning after current. The caller supplies current as newNodes[0].
+  const size_t candidateCount = currentIndex + count;
+  if (candidateCount - 1 > ROUTE_MAX_NODES) return false;
+
+  uint8_t candidate[ROUTE_MAX_NODES][8] = {};
+  for (size_t i = 0; i <= currentIndex; ++i)
+    memcpy(candidate[i], nodes[i], 8);
+
+  for (size_t i = 1; i < count; ++i) {
+    if (zeroId(newNodes[i]) || hasVisited(newNodes[i])) return false;
+    for (size_t j = 0; j <= currentIndex; ++j)
+      if (sameId(candidate[j], newNodes[i])) return false;
+    for (size_t j = 1; j < i; ++j)
+      if (sameId(newNodes[j], newNodes[i])) return false;
+    memcpy(candidate[currentIndex + i], newNodes[i], 8);
+  }
+
   memset(nodes, 0, sizeof(nodes));
-  for (size_t i = 0; i < count; ++i) memcpy(nodes[i], newNodes[i], 8);
-  nodeCount = static_cast<uint8_t>(count);
+  for (size_t i = 0; i < candidateCount; ++i)
+    memcpy(nodes[i], candidate[i], 8);
+  nodeCount = static_cast<uint8_t>(candidateCount);
   return isValid();
 }
 
