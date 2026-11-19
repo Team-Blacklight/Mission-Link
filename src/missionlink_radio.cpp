@@ -9,10 +9,6 @@
 #ifndef ML_RADIO_RX_ENABLED
 #define ML_RADIO_RX_ENABLED 0
 #endif
-#ifndef ML_RADIO_ANT_SW
-#define ML_RADIO_ANT_SW 38
-#endif
-
 #if ML_RADIO_PINMAP_VERIFIED
 #include <Arduino.h>
 #include <SPI.h>
@@ -84,9 +80,6 @@ bool MissionLinkRadio::beginReceive() {
   return false;
 #else
   if (!initialized_) {
-    // The Wio-SX1262 RF path is switched separately from the SX1262 itself.
-    pinMode(ML_RADIO_ANT_SW, OUTPUT);
-    digitalWrite(ML_RADIO_ANT_SW, HIGH);
     SPI.begin(ML_RADIO_SCK, ML_RADIO_MISO, ML_RADIO_MOSI, ML_RADIO_CS);
     const int16_t rc = radio.begin(ML_RADIO_FREQ_MHZ, ML_RADIO_BANDWIDTH_KHZ,
                                    ML_RADIO_SPREADING_FACTOR, ML_RADIO_CODING_RATE,
@@ -98,6 +91,9 @@ bool MissionLinkRadio::beginReceive() {
       receiving_ = false;
       return false;
     }
+    // The supplied B2B reference sketch configures the SX1262 DIO2 as its
+    // RF switch. Keep this inside the verified-pinmap-only initialization path.
+    radio.setDio2AsRfSwitch(true);
     initialized_ = true;
   }
 #if ML_RADIO_RX_ENABLED
