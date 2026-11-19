@@ -57,3 +57,30 @@ Run tests with:
 ```sh
 python -m unittest discover -s host/tests -v
 ```
+
+
+## Reusable Python resolver interface
+
+Client code can resolve an address in-process without spawning the CLI or parsing the
+contact JSON file directly:
+
+```python
+from host.missionlink_contacts import ContactBook
+from host.missionlink_contact_resolver import ContactBookResolver
+
+book = ContactBook.load("contacts.json")
+resolver = ContactBookResolver(book)
+contact = resolver.resolve("(777)-482-1937")
+if contact is not None:
+    print(contact.display_name, contact.routing_node_id)
+```
+
+The `ContactResolver` protocol defines the small `resolve(mesh_number)` interface,
+and `ResolvedContact` is a client-facing view model with display-oriented names.
+Malformed Mesh Numbers raise `ContactBookError`; a valid number with no saved entry
+returns `None`. `resolver_from_file(path)` is a convenience helper that loads one
+snapshot. It does not watch the file for later edits; reload and replace the resolver
+when updated contacts should become visible.
+
+This remains local lookup only. A resolved label or stored fingerprint is not proof
+of identity, and the resolver does not discover nodes, verify keys, or send messages.
