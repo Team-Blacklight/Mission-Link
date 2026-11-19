@@ -46,6 +46,10 @@ The V1 product family is selected, but the exact physical revision fitted to eac
 
 The official schematic matching the physical board revision is the source of truth. A generic SX1262 pinout, the nRF52840 Wio variant, or the XIAO edge-header pin list alone is not sufficient to configure the radio adapter.
 
+## Firmware board profile
+
+The firmware now selects `ML_BOARD_XIAO_ESP32S3_WIO_SX1262_B2B=1` in `platformio.ini` and includes `include/missionlink_board_xiao_esp32s3_wio_sx1262_b2b.h` from the radio adapter. This profile records the top-mounted B2B variant and its signal names, but intentionally contains no GPIO assignments. It also blocks compilation if `ML_RADIO_PINMAP_VERIFIED` is changed to `1` before a verified pin map is added.
+
 ## Firmware configuration policy
 
 The default firmware remains fail-closed while the physical revision and applicable Canadian operating conditions are not reviewed:
