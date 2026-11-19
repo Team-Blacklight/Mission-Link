@@ -2,6 +2,26 @@
 
 This checklist tracks the work required before MissionLink may use the SX1262 radio. It intentionally does not guess GPIO assignments or enable RF.
 
+## Candidate B2B mapping supplied for V1
+
+A user-provided XIAO ESP32-S3 + Wio-SX1262 serial-chat sketch supplies this candidate mapping:
+
+| Signal | Candidate GPIO |
+|---|---:|
+| SPI SCK | 7 |
+| SPI MISO | 8 |
+| SPI MOSI | 9 |
+| NSS / CS | 41 |
+| Reset | 42 |
+| BUSY | 40 |
+| DIO1 | 39 |
+
+These values are recorded in `missionlink_board_xiao_esp32s3_wio_sx1262_b2b.h` as documentation-only candidate constants. They are not consumed by the radio driver and do not set `ML_RADIO_PINMAP_VERIFIED`. Verify the mapping against the exact physical board revision and the official schematic before promoting them to active `ML_RADIO_*` definitions.
+
+The reference sketch uses `radio.setDio2AsRfSwitch(true)`; the guarded adapter now follows that DIO2 configuration pattern rather than assuming an external RF-switch GPIO. This too requires confirmation against the exact board documentation.
+
+The sketch's 915 MHz frequency, 125 kHz bandwidth, SF9, coding rate 7, 22 dBm output power, and sync word are not adopted. In particular, do not assume US-oriented settings are authorized or appropriate in Canada. The sketch's printable-ASCII Vigenère-style seed cipher is obfuscation, not authenticated encryption, and must not be used for Mission Link traffic.
+
 ## Gate 0 — identify the exact hardware
 
 - [ ] Record the exact XIAO ESP32-S3 board revision.
