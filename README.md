@@ -17,6 +17,7 @@ This is an actively developing scaffold, **not yet a validated radio firmware bu
 - **Cross-platform host services:** [`docs/HOST_SERVICES.md`](docs/HOST_SERVICES.md), [`host/missionlink_services.py`](host/missionlink_services.py), [`host/missionlink_store.py`](host/missionlink_store.py), and [`host/missionlink_gateway.py`](host/missionlink_gateway.py) — bounded service registry with atomic local persistence and an experimental token-authenticated HTTP API restricted to loopback. It is a local control-plane API only, not a radio bridge or production service transport.
 - **Architecture notes:** `docs/CLIENT_ARCHITECTURE.md`.
 - **Security and glyph transport design:** `docs/CIPHER_SUITES.md` (design proposal; not implemented in firmware yet).
+- **Public-key cryptography:** `docs/PUBLIC_KEY_CRYPTO_V1.md` — proposed X25519 key agreement, Ed25519 device identity signatures, and HKDF-SHA-256 key derivation; design only.
 - **Shared command/event schema:** `docs/CLIENT_PROTOCOL.md`.
 - **Binary packet format:** `docs/PACKET_FORMAT.md` (protocol v1 codec layout and validation rules).
 - **Radio bring-up checklist:** `docs/RADIO_BRINGUP.md` (staged hardware validation; RF remains disabled).
