@@ -27,6 +27,8 @@ The official Seeed schematic linked below is titled **Wio-SX1262 for XIAO V1.0**
 
 The corresponding GPIO assignments must be checked against the XIAO-side schematic for the same hardware revision before they are entered into firmware. Do not treat the 30-pin connector positions as XIAO edge-header GPIO numbers.
 
+The user supplied a reference sketch with this candidate mapping: SCK 7, MISO 8, MOSI 9, NSS 41, RESET 42, BUSY 40, and DIO1 39. These are recorded as documentation-only candidate constants in the board profile, not active driver configuration. The sketch also uses the SX1262 DIO2 RF-switch feature; the adapter mirrors that setting only inside the guarded initialization path. Neither the candidate GPIO mapping nor DIO2 behavior is considered hardware-verified yet.
+
 ## Hardware revision record
 
 The V1 product family is selected, but the exact physical revision fitted to each node still needs to be recorded from its board markings and matched to the schematic. Record:
