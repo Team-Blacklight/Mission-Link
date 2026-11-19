@@ -1,3 +1,15 @@
+### 2026-11-19 — Authenticated outage-report ingestion contract
+- **Owner:** ChatGPT
+- **Status:** contract and schema committed on `feat/status-report-ingestion-contract`; draft PR to follow. No backend deployment target selected.
+- **Commits:** [contract](https://github.com/Team-Blacklight/Mission-Link/commit/6de2b6ee0c231b7ae623853f2da72cdf3cf98d89), [JSON Schema](https://github.com/Team-Blacklight/Mission-Link/commit/84650da36b1e683fb34ee6e9ff67ae6fb9cc1534).
+- **Changed paths:** `docs/STATUS_REPORT_INGESTION.md`, `docs/status-report.schema.json`.
+- **Implemented:** deployment-neutral signed report envelope contract (HMAC-SHA256 over exact body plus timestamp/nonce), durable replay prevention requirements, reporter authorization, server-side dependency correlation, quorum and expiry rules, privacy constraints, response codes, and a bounded version-1 report JSON Schema.
+- **Validation:** source-level review only; no automated schema validator or backend tests run. No live service or status feed is deployed.
+- **Limits:** no secrets, keys, report endpoint, storage engine, firmware reporter, or RF behavior added. Public tracker remains unknown until a real authenticated aggregator publishes fresh data. RF transmission remains disabled.
+- **Next:** choose hosting/runtime and durable database, then implement the ingestion API and aggregator against this contract.
+
+---
+
 ### 2026-10-16 — Reusable local contact resolver
 - **Owner:** ChatGPT
 - **Status:** implementation committed on `feat/contact-resolver-interface`; pull-request CI not yet confirmed.
