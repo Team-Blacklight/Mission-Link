@@ -42,7 +42,7 @@ MeshAction MeshRouter::process(const Packet& p,const uint8_t localId[8],uint32_t
     !validMode(static_cast<uint8_t>(p.mode)) || p.payload.size()>ML_MAX_PAYLOAD ||
     p.hopLimit>ML_MAX_HOPS || p.hopCount>p.hopLimit || allZero(p.source) ||
     allZero(p.messageId) || same8(p.source,localId)) return MeshAction::DropInvalid;
- if(p.mode==AddressMode::Direct && allZero(p.destination)) return MeshAction::DropInvalid;
+ if((p.mode==AddressMode::Direct || p.mode==AddressMode::Group) && allZero(p.destination)) return MeshAction::DropInvalid;
  if(isDuplicate(p,now)) return MeshAction::DropDuplicate;
  const bool directHere=p.mode==AddressMode::Direct && same8(p.destination,localId);
  if(directHere) return MeshAction::DeliverLocal;

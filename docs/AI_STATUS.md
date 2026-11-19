@@ -1,12 +1,76 @@
-### 2026-10-15 — Reusable in-process contact resolver
+### 2026-10-16 — Reusable local contact resolver
 - **Owner:** ChatGPT
-- **Status:** implementation committed on `feat/contact-resolver-api`; CI pending.
-- **Changed paths:** `host/missionlink_contact_resolver.py`, `host/tests/test_missionlink_contact_resolver.py`, `docs/LOCAL_CONTACT_BOOK.md`.
-- **Implemented:** a `ContactResolver` protocol, client-facing `ResolvedContact` view model, `ContactBookResolver` adapter, and a helper that loads a contact-book snapshot from disk. Consumers can resolve addresses in-process without launching a subprocess or parsing the persistence schema.
-- **Tests added:** view-model mapping, valid-but-unknown address, invalid address handling, type guard, and explicit snapshot behavior.
-- **Validation:** tests committed but not yet run in CI; no physical hardware or RF test performed.
-- **Limits:** local lookup only; no live file watching, node discovery, key verification, message sending, or radio transport. RF remains disabled.
-- **Next:** run the full host/native/ESP32 CI workflow and fix any failures before proposing the change.
+- **Status:** implementation committed on `feat/contact-resolver-interface`; pull-request CI not yet confirmed.
+- **Changed paths:** `host/missionlink_contact_resolver.py`, `host/tests/test_missionlink_contact_resolver.py`, `docs/CONTACT_RESOLVER.md`.
+- **Implemented:** read-only resolver facade over the contact book; exact Mesh Number lookup; case-insensitive exact label lookup; explicit matched/not-found/ambiguous results; deterministic substring search; validated file loading. Duplicate labels never silently select an arbitrary node.
+- **Validation:** added seven unit tests for exact number, label matching, missing results, duplicate-label ambiguity, stable search, invalid queries, and file loading. CI for this branch has not yet been observed. No physical hardware or RF behavior tested.
+- **Limits:** lookup only; no node discovery, trust verification, service authorization, or message delivery. RF remains disabled.
+- **Next:** open PR and verify the complete host suite plus ESP32-S3 build in GitHub Actions.
+
+---
+
+### 2026-10-15 — Add hardware-independent mOS storage guards
+- **Owner:** ChatGPT
+- **Status:** implementation committed on `docs/mos-storage-layout`; CI pending.
+- **Changed paths:** `include/mos_storage.h`, `src/mos_storage.cpp`, `test/test_mos_storage/test_mos_storage.cpp`, `platformio.ini`, `docs/MOS_STORAGE_ARCHITECTURE.md`.
+- **Implemented:** a portable removable-storage state classifier (`absent` vs `ready` vs `error`), strict relative-path validation (including traversal and length bounds), and a size-limit helper. Added native tests and included the new source in the native PlatformIO test build.
+- **Validation:** tests are committed but CI has not yet run on this new head. No filesystem mount, TF-card I/O, contact/message persistence, or physical-board test is claimed.
+- **Safety/limits:** no SD pins or card interface guessed; no auto-formatting; RF remains disabled.
+- **Next:** verify CI; once the round-display model and SD wiring are known, add the hardware mount adapter and then bounded contact persistence.
+
+---
+
+### 2026-10-15 — Correct preset persistence detection
+- **Owner:** ChatGPT
+- **Status:** committed on `docs/mos-storage-layout`; CI pending.
+- **Changed paths:** `src/main.cpp`.
+- **Fix:** ESP32 NVS reads with a default value can make an absent `preset` key look saved. Firmware now checks `isKey("preset")` before skipping writes and before reporting `presetPersisted:true`. This ensures choosing the default Client preset actually creates a saved record.
+- **Validation:** source-level review; CI pending and no physical hardware test.
+- **Next:** verify CI and continue storage implementation after board-specific SD wiring is known.
+
+---
+
+### 2026-10-15 — Expose internal settings health
+- **Owner:** ChatGPT
+- **Status:** committed on `docs/mos-storage-layout`; CI triggered for this change.
+- **Changed paths:** `src/main.cpp`, `docs/CLIENT_PROTOCOL.md`.
+- **Implemented:** `status` now includes `settingsReady` (whether NVS initialized) and `presetPersisted` (whether the active preset matches the saved value), so a client can diagnose flash-setting persistence without trying a write.
+- **Validation:** source and protocol example updated together; awaiting ESP32-S3 CI. No physical board test.
+- **Limits:** reports NVS/preset status only; it does not claim TF/microSD or contact/message storage is available. RF remains disabled.
+- **Next:** confirm CI, then continue with storage work only where hardware details are verified.
+
+---
+
+### 2026-10-15 — Document persistent preset response
+- **Owner:** ChatGPT
+- **Status:** committed on `docs/mos-storage-layout`; CI is running for the branch head.
+- **Changed paths:** `docs/CLIENT_PROTOCOL.md`.
+- **Implemented:** protocol docs now describe NVS-backed preset restore, runtime-only fallback, write-failure behavior, and the `persisted` response field.
+- **Validation:** documentation reviewed against current firmware source; no physical device test.
+- **Next action:** confirm the ESP32-S3 build and native tests on the final PR head.
+
+---
+
+### 2026-10-15 — Persist node preset in internal flash
+- **Owner:** ChatGPT
+- **Status:** implementation committed on `docs/mos-storage-layout`; CI not yet verified for this change.
+- **Changed paths:** `src/main.cpp`, `docs/MOS_STORAGE_ARCHITECTURE.md`.
+- **Implemented:** firmware uses ESP32 `Preferences`/NVS to restore the selected client/repeater/gateway preset at boot and persist future changes. The preset response reports whether it was persisted. If NVS cannot initialize, preset changes are runtime-only with a warning; a failed write prevents applying the new preset. Re-selecting the already-saved preset skips a redundant NVS write to reduce flash wear.
+- **Validation:** source-level review only so far. ESP32-S3 compilation and firmware tests must be checked in GitHub Actions; no physical board test performed.
+- **Limits:** only this small setting is persisted internally. No TF/microSD driver, contact/message storage, or key storage is implemented. RF remains disabled.
+- **Next action:** verify ESP32-S3 CI; then implement card support only after the exact round-display model and SD wiring are confirmed.
+
+---
+
+### 2026-10-15 — mOS internal-flash and TF/microSD storage architecture
+- **Owner:** ChatGPT
+- **Status:** design note committed on `docs/mos-storage-layout`; implementation not yet started.
+- **Changed paths:** `docs/MOS_STORAGE_ARCHITECTURE.md`, `docs/AI_STATUS.md`.
+- **Decision:** boot-critical mOS firmware, LoRa stack, mesh/router, protocol validation, security code, and minimum recovery configuration belong on internal flash. Contacts, message history, receipts, logs, preferences, and optional large assets belong on TF/microSD.
+- **Reliability requirements:** device must boot without a card; no auto-formatting; bounded files; versioned schema validation; recoverable writes; avoid high-frequency writes; never store private keys as plaintext card files.
+- **Validation:** documentation-only; no firmware build, SD-card driver, board wiring, or physical card test performed.
+- **Blocker before implementation:** identify the exact round-display model and SD interface/pin mapping, then confirm the actual flash partition layout. Do not guess chip-select pins or claim SD support is implemented.
+- **Next action:** implement a storage manager after board wiring is confirmed, then add tested contact persistence before message history.
 
 ---
 
@@ -194,3 +258,14 @@ Add newest entries at the top. Link to the commit, PR, or issue whenever possibl
 - **Risks / compatibility:**
 - **Next action:**
 ```
+
+
+### 2026-10-14 — Ubuntu/Linux USB serial client
+- **Owner:** ChatGPT, requested by maintainer.
+- **Status:** implementation committed to branch `feat/ubuntu-linux-serial-client`; pull request to follow. Automated tests have been authored but have not yet been run in this tool session.
+- **Commits:** [CLI client](https://github.com/Innygr/Mission-Link/commit/f6e0d4849eebea0fcb12b44ab4b7b44bee0e51b6), [CLI protocol tests](https://github.com/Innygr/Mission-Link/commit/c19b17af1c66b46451622b8a9128dea5e46bde98), [Ubuntu guide](https://github.com/Innygr/Mission-Link/commit/255d2d883c1929b83d30673f5bd39d3393f2a50e).
+- **Changed paths:** `host/missionlink_linux.py`, `host/tests/test_missionlink_linux.py`, `docs/UBUNTU_LINUX_CLIENT.md`.
+- **Implemented:** Python CLI over the existing newline-delimited USB serial/JSON interface for status, preset listing/selection, and monitoring emitted JSON lines. Adds bounded response parsing, a command allowlist, pySerial optional dependency handling, fake-serial unit tests, and Ubuntu setup instructions.
+- **Limitations:** this is not yet a live LoRa chat client, LAN gateway API, or background daemon. Firmware still rejects messaging as not ready; the monitor only sees events actually emitted by firmware. Preset selection is RAM-only. No hardware or over-the-air test was performed.
+- **Safety:** no RF settings changed; no transmit command is exposed by this CLI.
+- **Next:** run Python unit tests and CI, then design a versioned authenticated gateway API and real host-to-node message events once the firmware's secured message path is ready.

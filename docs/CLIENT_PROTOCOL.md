@@ -26,14 +26,14 @@ Placeholder command families (return `type=error`, code `not_ready`):
 - `join <channel-id>`
 - `leave <channel-id>`
 
-Preset selection is held in RAM only and resets to Client on reboot. It changes the RF-independent routing policy object. The guarded radio receive-to-router and forward-to-radio calls are wired into the main loop, but the adapter stays inert with the default unverified pin map, RF transmission is disabled, and local application delivery is not implemented.
+Preset selection is persisted in ESP32 NVS (internal flash) and restored at boot when NVS is available. If NVS cannot initialize, firmware emits a `settings_unavailable` warning and changes are runtime-only; the preset response includes `persisted:false`. If a write fails, the command returns `settings_write_failed` and does not apply the new preset. This is a small system setting, not TF/microSD storage. Preset selection changes the RF-independent routing policy object. The guarded radio receive-to-router and forward-to-radio calls are wired into the main loop, but the adapter stays inert with the default unverified pin map, RF transmission is disabled, and local application delivery is not implemented.
 
 ## Events
 
-Status response (firmware 0.2.1; fields may evolve). `radioReady` is true only when the adapter is initialized and reports `ready`; `radioState` gives the adapter state. With the default unverified pin map and disabled RF, expect `pinmap_unverified` and `radioReady:false`:
+Status response (firmware 0.2.1; fields may evolve). `radioReady` is true only when the adapter is initialized and reports `ready`; `radioState` gives the adapter state. With the default unverified pin map and disabled RF, expect `pinmap_unverified` and `radioReady:false`. `settingsReady` reports whether internal-flash NVS initialized; `presetPersisted` reports whether the active preset matches the saved NVS value:
 
 ```json
-{"type":"status","firmware":"0.2.1","protocolVersion":1,"rfEnabled":false,"bleReady":true,"serialReady":true,"radioReady":false,"radioInitialized":false,"radioReceiving":false,"radioState":"pinmap_unverified","preset":"client"}
+{"type":"status","firmware":"0.2.1","protocolVersion":1,"rfEnabled":false,"bleReady":true,"serialReady":true,"radioReady":false,"radioInitialized":false,"radioReceiving":false,"radioState":"pinmap_unverified","settingsReady":true,"presetPersisted":true,"preset":"client"}
 ```
 
 Preset list response:
@@ -45,7 +45,7 @@ Preset list response:
 Preset selection response:
 
 ```json
-{"type":"preset","active":"repeater"}
+{"type":"preset","active":"repeater","persisted":true}
 ```
 
 Node discovery response:
@@ -77,3 +77,38 @@ Boot and BLE events report firmware startup/advertising. Clients should tolerate
 - Do not send secrets over BLE until an authenticated pairing/provisioning flow is implemented.
 - The LoRa transmitter remains disabled. Never treat the current scaffold as a production secure messenger.
 - Future radio payloads must use authenticated encryption and replay protection; routing relays should not need message plaintext keys.
+
+
+## Python USB serial client
+
+The host-side diagnostic client is available in `host/missionlink_serial_client.py`.
+It supports only the currently implemented control commands (`help`, `status`,
+`nodes`, `presets`, and the three preset choices). It reads newline-delimited JSON,
+skips unrelated asynchronous events, validates response shape and size, and times out
+when no matching response arrives.
+
+Install PySerial only if opening a real port:
+
+```sh
+python -m pip install pyserial
+```
+
+Example:
+
+```python
+from host.missionlink_serial_client import open_serial
+
+client = open_serial("COM5")  # On Linux, typically /dev/ttyACM0 or /dev/ttyUSB0
+try:
+    print(client.status())
+    print(client.presets())
+finally:
+    client.close()
+```
+
+The port name is platform-specific. Close other serial monitors before connecting.
+The client intentionally rejects `send`, `group`, `join`, and `leave`: firmware
+reports those operations as not ready, and exposing them as a working messaging API
+would be misleading. Node discovery is also still unimplemented. This client is a
+local diagnostic/control adapter only; it does not enable RF or prove physical
+device connectivity.

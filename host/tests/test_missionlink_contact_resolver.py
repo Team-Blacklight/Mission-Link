@@ -2,57 +2,64 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from host.missionlink_contacts import Contact, ContactBook, ContactBookError
-from host.missionlink_contact_resolver import (
-    ContactBookResolver,
-    ResolvedContact,
-    resolver_from_file,
-)
+from host.missionlink_contacts import Contact, ContactBook
+from host.missionlink_contact_resolver import ContactResolver, ResolutionStatus
 
-NUMBER = "(777)-482-1937"
-FINGERPRINT = "b" * 64
+MISSION = "(777)-111-2222"
+VANCOUVER = "(777)-482-1937"
 
 
 class ContactResolverTests(unittest.TestCase):
-    def test_resolves_client_view_without_exposing_storage_field_names(self):
+    def setUp(self):
         book = ContactBook()
-        book.upsert(Contact(
-            NUMBER, "Vancouver relay", node_id="node_van",
-            public_key_fingerprint=FINGERPRINT, last_seen_ms=1234,
-        ))
-        resolved = ContactBookResolver(book).resolve(NUMBER)
-        self.assertEqual(resolved, ResolvedContact(
-            mesh_number=NUMBER,
-            display_name="Vancouver relay",
-            routing_node_id="node_van",
-            public_key_fingerprint=FINGERPRINT,
-            last_seen_ms=1234,
-        ))
+        book.upsert(Contact(MISSION, "Mission base", node_id="mission_node"))
+        book.upsert(Contact(VANCOUVER, "Vancouver relay", node_id="vancouver_node"))
+        self.book = book
+        self.resolver = ContactResolver(book)
 
-    def test_unknown_valid_number_returns_none(self):
-        self.assertIsNone(ContactBookResolver(ContactBook()).resolve(NUMBER))
+    def test_resolves_exact_mesh_number_before_label(self):
+        result = self.resolver.resolve(VANCOUVER)
+        self.assertEqual(result.status, ResolutionStatus.MATCHED)
+        self.assertEqual(result.contact.mesh_number, VANCOUVER)
 
-    def test_invalid_number_is_distinct_from_unknown_number(self):
-        resolver = ContactBookResolver(ContactBook())
-        with self.assertRaisesRegex(ContactBookError, "invalid_mesh_number"):
-            resolver.resolve("777-482-1937")
+    def test_resolves_label_case_insensitively(self):
+        result = self.resolver.resolve("vAnCoUvEr ReLaY")
+        self.assertEqual(result.status, ResolutionStatus.MATCHED)
+        self.assertEqual(result.contact.mesh_number, VANCOUVER)
 
-    def test_rejects_wrong_book_type(self):
-        with self.assertRaisesRegex(TypeError, "book_must_be_contact_book"):
-            ContactBookResolver(object())
+    def test_not_found_is_explicit(self):
+        result = self.resolver.resolve("Unknown relay")
+        self.assertEqual(result.status, ResolutionStatus.NOT_FOUND)
+        self.assertIsNone(result.contact)
+        self.assertEqual(result.matches, ())
 
-    def test_file_helper_loads_once_and_resolves(self):
-        book = ContactBook()
-        book.upsert(Contact(NUMBER, "Mission gateway", node_id="node_mission"))
+    def test_duplicate_labels_are_ambiguous_not_arbitrarily_selected(self):
+        self.book.upsert(Contact("(777)-333-4444", "Mission base"))
+        result = self.resolver.resolve("MISSION BASE")
+        self.assertEqual(result.status, ResolutionStatus.AMBIGUOUS)
+        self.assertIsNone(result.contact)
+        self.assertEqual(
+            {contact.mesh_number for contact in result.matches},
+            {MISSION, "(777)-333-4444"},
+        )
+
+    def test_search_is_case_insensitive_and_stably_ordered(self):
+        matches = self.resolver.search("RELAY")
+        self.assertEqual([contact.mesh_number for contact in matches], [VANCOUVER])
+
+    def test_empty_queries_are_rejected(self):
+        for query in ("", "   ", None, 123):
+            with self.subTest(query=query), self.assertRaises(ValueError):
+                self.resolver.resolve(query)
+        with self.assertRaises(ValueError):
+            self.resolver.search(" ")
+
+    def test_from_path_loads_and_validates_book(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "contacts.json"
-            book.save(path)
-            resolver = resolver_from_file(str(path))
-            self.assertEqual(resolver.resolve(NUMBER).display_name, "Mission gateway")
-            # Resolver is an explicit snapshot, not a live file watcher.
-            book.rename(NUMBER, "Renamed")
-            book.save(path)
-            self.assertEqual(resolver.resolve(NUMBER).display_name, "Mission gateway")
+            self.book.save(path)
+            resolver = ContactResolver.from_path(path)
+            self.assertEqual(resolver.resolve("Mission base").contact.mesh_number, MISSION)
 
 
 if __name__ == "__main__":
