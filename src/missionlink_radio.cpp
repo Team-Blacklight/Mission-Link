@@ -1,6 +1,7 @@
 #include "missionlink_radio.h"
 #include "missionlink_config.h"
 #include "missionlink_packet.h"
+#include "missionlink_board_xiao_esp32s3_wio_sx1262_b2b.h"
 
 #ifndef ML_RADIO_PINMAP_VERIFIED
 #define ML_RADIO_PINMAP_VERIFIED 0
