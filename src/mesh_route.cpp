@@ -87,7 +87,7 @@ bool RoutePath::replaceRemaining(const uint8_t current[8],
   // Keep the already-traversed prefix, then append the replacement route
   // beginning after current. The caller supplies current as newNodes[0].
   const size_t candidateCount = currentIndex + count;
-  if (candidateCount - 1 > ROUTE_MAX_NODES) return false;
+  if (candidateCount > ROUTE_MAX_NODES) return false;
 
   uint8_t candidate[ROUTE_MAX_NODES][8] = {};
   for (size_t i = 0; i <= currentIndex; ++i)
