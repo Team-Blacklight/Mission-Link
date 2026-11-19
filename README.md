@@ -1,10 +1,12 @@
-# MissionLink 
+# MissionLink
 
 Custom encrypted LoRa messaging for XIAO ESP32-S3 + Wio-SX1262.
 
 ## Project status
 
 This is an actively developing scaffold, **not yet a validated radio firmware build or production messaging system**. RF transmission is deliberately disabled. The exact Wio-SX1262 pin mapping, RF switch setup, and regional radio configuration must be confirmed for the exact hardware revision before enabling RF transmission. Verify Canadian compliance before transmitting.
+
+**V1 hardware target:** Seeed Studio XIAO ESP32-S3 + the Wio-SX1262 kit supplied for that board. See [Mission Link V1 hardware baseline](docs/MISSION_LINK_V1_HARDWARE.md) for the selected platform, official references, and remaining hardware-verification gates.
 
 ## Client applications
 
