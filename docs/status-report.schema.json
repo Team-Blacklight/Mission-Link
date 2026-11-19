@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://teamblacklight.ca/schemas/missionlink/status-report-v1.json",
+  "title": "MissionLink authenticated status report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "targetPublicId", "observedState", "observedAt"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "targetPublicId": { "type": "string", "minLength": 8, "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$" },
+    "observedState": { "type": "string", "enum": ["reachable", "unreachable", "maintenance"] },
+    "observedAt": { "type": "string", "format": "date-time", "maxLength": 32 },
+    "latencyMs": { "type": "integer", "minimum": 0, "maximum": 600000 },
+    "packetLossPermille": { "type": "integer", "minimum": 0, "maximum": 1000 },
+    "observationWindowSeconds": { "type": "integer", "minimum": 10, "maximum": 3600 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "observedState": { "const": "reachable" } }, "required": ["observedState"] },
+      "then": { "anyOf": [{ "required": ["latencyMs"] }, { "required": ["packetLossPermille"] }] }
+    }
+  ]
+}
