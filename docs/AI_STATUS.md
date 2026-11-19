@@ -1,3 +1,15 @@
+### 2026-11-19 — RF enablement readiness hardening
+- **Owner:** ChatGPT
+- **Status:** implemented on `feat/rf-enable-readiness`; CI and hardware validation must be checked separately.
+- **Changed paths:** `platformio.ini`, `docs/RF_ENABLEMENT_READINESS.md`, `docs/RADIO_BRINGUP.md`.
+- **Implemented:** default PlatformIO build now sets `ML_RADIO_PINMAP_VERIFIED=0` and `ML_RADIO_RX_ENABLED=0`, removing unverified GPIO and RF configuration values from the default environment. `ML_RF_ENABLED` remains zero in `include/missionlink_config.h`. Added explicit hardware, Canadian compliance, cryptographic, adapter, and mesh-forwarding readiness gates.
+- **Reason:** previous default flags marked the pin map verified and enabled the receive path, even though transmission was blocked. This did not match the documented fully-disabled default.
+- **Validation:** source-level review only; CI has not yet been confirmed. No physical hardware or over-the-air test performed.
+- **Blockers:** exact board/module revisions and official pinout evidence; applicable ISED Canada authorization/configuration review; authenticated encryption, nonce uniqueness, replay protection, key lifecycle, and relay-compatible authentication.
+- **Safety:** RF remains disabled. This change does not enable receive or transmit and does not claim regulatory or hardware validation.
+
+---
+
 ### 2026-11-19 — Authenticated outage-report ingestion contract
 - **Owner:** ChatGPT
 - **Status:** contract and schema committed on `feat/status-report-ingestion-contract`; draft PR to follow. No backend deployment target selected.

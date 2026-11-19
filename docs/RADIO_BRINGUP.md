@@ -44,4 +44,13 @@ Only proceed after the exact pinout and regional configuration have been indepen
 
 ## Current status
 
-The repository currently has a packet codec and USB/BLE command scaffold. Radio send/receive, production encryption, acknowledgements, and relaying are not implemented. RF remains disabled.
+The SX1262 RadioLib adapter exists, including receive and transmit methods, but the default build is intentionally inert:
+- `ML_RADIO_PINMAP_VERIFIED=0`
+- `ML_RADIO_RX_ENABLED=0`
+- `ML_RF_ENABLED=0`
+
+No radio initialization, receive mode, or transmission should occur in the default build. The previous hard-coded pin/frequency/modulation/power values were removed from PlatformIO defaults because their verification against the exact physical hardware and Canadian authorization had not been demonstrated.
+
+Production authenticated encryption, nonce lifecycle, replay protection, key provisioning, and physical hardware validation remain incomplete. Mesh forwarding must remain blocked until the authenticated packet design and its tests are complete.
+
+See [RF enablement readiness](RF_ENABLEMENT_READINESS.md) for the evidence required before any future enablement review.
