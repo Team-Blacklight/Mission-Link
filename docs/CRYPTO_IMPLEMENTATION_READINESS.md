@@ -70,6 +70,6 @@ If the bundled mbedTLS does not provide a required primitive, evaluate a maintai
 
 ## Current validation status
 
-This audit is based on source inspection of platformio.ini, include/missionlink_config.h, src/main.cpp, and src/missionlink_radio.cpp. No PlatformIO build, toolchain resolution, crypto API probe, unit test, or hardware test was run during this audit. CI has not reported check runs for the inspected PR head at audit time.
+This audit is based on source inspection of platformio.ini, include/missionlink_config.h, src/main.cpp, and src/missionlink_radio.cpp. No PlatformIO build, toolchain resolution, crypto API probe, unit test, or hardware test was run during this audit. The firmware CI workflow is path-filtered to firmware, tests, host code, PlatformIO configuration, and selected web files; this documentation-only PR does not match those paths, so no firmware CI run is expected. No crypto-specific CI job exists yet.
 
 **Safety:** documentation only. No cryptographic implementation, dependency change, key material, radio configuration, receive path, or transmit path is added.
