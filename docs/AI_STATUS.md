@@ -4,7 +4,7 @@
 - **Commit:** https://github.com/Team-Blacklight/Mission-Link/commit/11426f3f506b2c7d03405c76d645118361bad177
 - **Changed paths:** `docs/CRYPTO_IMPLEMENTATION_READINESS.md`, `docs/AI_STATUS.md`.
 - **Findings:** firmware uses PlatformIO + Arduino-ESP32, but `platform = espressif32` is unpinned and no explicit crypto dependency is declared. Native C++ tests do not currently build a crypto provider. The exact ESP-IDF / mbedTLS versions and enabled X25519 / Ed25519 / HKDF modules must be verified from a reproducible CI toolchain before selecting APIs.
-- **Validation:** source inspection only of `platformio.ini`, `include/missionlink_config.h`, `src/main.cpp`, and `src/missionlink_radio.cpp`. No PlatformIO build, toolchain resolution, crypto API probe, unit test, or hardware test was run for this audit. The inspected PR head had zero GitHub check-runs at audit time.
+- **Validation:** source inspection only of `platformio.ini`, `include/missionlink_config.h`, `src/main.cpp`, and `src/missionlink_radio.cpp`. No PlatformIO build, toolchain resolution, crypto API probe, unit test, or hardware test was run for this audit. The documentation-only PR does not match the path filters in firmware-ci.yml, so no firmware CI run is expected; no crypto-specific CI job exists yet.
 - **Safety:** documentation only. No crypto code, dependency, key material, radio configuration, RX, or TX behavior changed. RF remains disabled.
 - **Next:** inspect the exact CI workflow and resolve/pin the ESP32 toolchain, then add a compile-only crypto capability probe and published known-answer tests before implementing protocol state.
 
